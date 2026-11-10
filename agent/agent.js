@@ -116,22 +116,30 @@ async function main() {
   rl.prompt();
 
   for await (const line of rl) {
-    const input = line.trim();
+  const input = line.trim();
 
-    if (input === "/quit") break;
-    if (input === "/memories") {
-      showMemories();
-    } else if (input) {
-      try {
-        const result = await run(agent, [...history, { role: "user", content: input }]);
-        history = result.history;
-        console.log(`PAM: ${result.finalOutput}\n`);
-      } catch (error) {
-        console.log(`Error: ${error.message}\n`);
-      }
+  if (input === "/quit") break;
+
+  if (input === "/memories") {
+    console.log();
+    showMemories();
+  } else if (input) {
+    try {
+      const result = await run(agent, [
+        ...history,
+        { role: "user", content: input }
+      ]);
+
+      history = result.history;
+
+      console.log(`\nPAM: ${result.finalOutput}\n`);
+    } catch (error) {
+      console.error(`\nError: ${error.message}\n`);
     }
-    rl.prompt();
   }
+
+  rl.prompt();
+}
 
   clearInterval(reminderTimer);
   rl.close();
