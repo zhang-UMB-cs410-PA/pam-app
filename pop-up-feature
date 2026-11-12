@@ -1,0 +1,242 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  TextInput, 
+  TouchableOpacity, 
+  KeyboardAvoidingView, 
+  Platform,
+  Modal,
+  SafeAreaView,
+  Alert 
+} from 'react-native';
+
+export default function Index() {
+  const [text, setText] = useState('');
+  
+  // Track if the app has mounted on the client browser
+  const [isMounted, setIsMounted] = useState(false);
+  const [isReminderOpen, setIsReminderOpen] = useState(false);
+  const [medName, setMedName] = useState('Lasix');
+
+  useEffect(() => {
+    setIsMounted(true);
+    setIsReminderOpen(true); // Automatically open reminder after client mount
+  }, []);
+
+  const handleSubmit = () => {
+    if (text.trim() === '') return;
+    
+    Alert.alert('Saved to Memory', `You submitted: "${text}"`);
+    setText(''); 
+  };
+
+  const handleReminderOk = () => {
+    setIsReminderOpen(false);
+  };
+
+  // Prevent rendering mismatched elements during web SSR
+  if (!isMounted) {
+    return null;
+  }
+
+  return (
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      style={styles.container}
+    >
+      {/* Top Bar button to re-trigger reminder anytime */}
+      <View style={styles.topBar}>
+        <TouchableOpacity 
+          style={styles.triggerButton} 
+          onPress={() => setIsReminderOpen(true)}
+        >
+          <Text style={styles.triggerButtonText}>View Reminder</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Main Screen Content */}
+      <View style={styles.innerContainer}>
+        <Text style={styles.greeting}>
+          Hello user, welcome to your personal memory companion.
+        </Text>
+
+        <View style={styles.formRow}>
+          <TextInput
+            style={styles.input}
+            placeholder="Type something to remember..."
+            placeholderTextColor="#666"
+            value={text}
+            onChangeText={setText}
+          />
+          
+          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+            <Text style={styles.buttonText}>Submit</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Full-Screen Reminder Pop-up */}
+      <Modal
+        visible={isReminderOpen}
+        animationType="fade"
+        transparent={false}
+        onRequestClose={() => setIsReminderOpen(false)}
+      >
+        <SafeAreaView style={styles.reminderScreenContainer}>
+          <View style={styles.reminderCard}>
+            <View style={styles.avatarContainer}>
+              <Text style={styles.avatarEmoji}>👩</Text>
+            </View>
+
+            <Text style={styles.pamTitle}>PAM</Text>
+
+            <Text style={styles.reminderMessage}>
+              Good morning, don't forget to take your {medName}
+            </Text>
+
+            <TouchableOpacity 
+              style={styles.okButton} 
+              onPress={handleReminderOk}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.okButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#121212', 
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  topBar: {
+    position: 'absolute',
+    top: 60,
+    zIndex: 10,
+  },
+  triggerButton: {
+    backgroundColor: '#1e1e1e',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#333333',
+  },
+  triggerButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  innerContainer: {
+    width: '90%',
+    maxWidth: 450,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  greeting: {
+    fontSize: 22,
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 25,
+    lineHeight: 30,
+  },
+  formRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  input: {
+    flex: 1,
+    height: 48,
+    backgroundColor: '#1e1e1e',
+    color: '#ffffff',
+    paddingHorizontal: 16,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 24, 
+    marginRight: 10,
+  },
+  button: {
+    height: 48,
+    backgroundColor: '#ffffff', 
+    paddingHorizontal: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 24, 
+  },
+  buttonText: {
+    color: '#121212',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  /* Full-Screen Reminder Styles */
+  reminderScreenContainer: {
+    flex: 1,
+    backgroundColor: '#3b3d36',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reminderCard: {
+    width: '85%',
+    maxWidth: 340,
+    backgroundColor: '#f3efe6',
+    borderRadius: 24,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  avatarContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#d8b99c',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  avatarEmoji: {
+    fontSize: 36,
+  },
+  pamTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1c1c1c',
+    letterSpacing: 1.2,
+    marginBottom: 10,
+  },
+  reminderMessage: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1c1c1c',
+    textAlign: 'center',
+    lineHeight: 28,
+    marginBottom: 28,
+  },
+  okButton: {
+    width: '100%',
+    height: 48,
+    backgroundColor: '#4a7aa5',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  okButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+});
