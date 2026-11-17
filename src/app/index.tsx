@@ -84,7 +84,7 @@ export default function Index() {
 
       <View style={styles.innerContainer}>
         
-        {/* Logo scaled up to 130px for a more prominent visual focus */}
+        {/* Logo */}
         <Image
           source={require('../../assets/images/logo.webp')}
           style={styles.appLogo}
@@ -216,11 +216,11 @@ const styles = StyleSheet.create({
     marginBottom: 28,
     lineHeight: 28,
     fontWeight: '400',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-light', // Clean modern geometric font framework
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-light',
     letterSpacing: -0.2,
   },
   boldHighlight: {
-    fontWeight: '700', // Emphasizes user target variables sharply
+    fontWeight: '700',
   },
   inputCard: {
     width: '100%',
