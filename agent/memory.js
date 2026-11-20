@@ -1,9 +1,53 @@
 // Memory store: a JSON file shared by Remember for Me, Help Me Remember, and Remind Me.
 //
-import fs from "node:fs";
 import crypto from "node:crypto";
+import fs from "node:fs";
 
 const FILE = "memories.json";
+
+const API_URL = "http://127.0.0.1:8000";
+
+export async function getDatabaseMemories() {
+  const response = await fetch(`${API_URL}/memories`);
+
+  if (!response.ok) {
+    throw new Error(`Backend error: ${response.status}`);
+  }
+
+  const memories = await response.json();
+
+  return memories.map((m) => ({
+    id: String(m.id),
+    type: m.memory_type,
+    description: m.content,
+    people: m.person_name ? [m.person_name] : [],
+    datetime: m.event_at,
+    location: m.location,
+    created: m.created_at,
+  }));
+}
+
+export async function addDatabaseMemory(fields) {
+  const response = await fetch(`${API_URL}/memories`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      memory_type: fields.type,
+      content: fields.description,
+      person_name: fields.people[0] ?? null,
+      location: fields.location,
+      event_at: fields.datetime,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Backend error: ${response.status}`);
+  }
+
+  return await response.json();
+}
 
 export function getMemories() {
   if (!fs.existsSync(FILE)) return [];

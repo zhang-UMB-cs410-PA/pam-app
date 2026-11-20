@@ -1,8 +1,13 @@
 import { Agent, run, tool } from "@openai/agents";
-import { z } from "zod";
 import readline from "node:readline";
-import { getMemories, addMemory, updateMemory, deleteMemory, takeDueReminders } from "./memory.js";
-
+import { z } from "zod";
+import {
+  addDatabaseMemory,
+  deleteMemory,
+  getDatabaseMemories,
+  takeDueReminders,
+  updateMemory
+} from "./memory.js";
 const MODEL = "gpt-5.6";
 const REMINDER_CHECK_MS = 15_000;
 
@@ -22,14 +27,14 @@ const saveMemoryTool = tool({
   name: "save_memory",
   description: "Store a new memory.",
   parameters: z.object(memoryFields),
-  execute: async (fields) => addMemory(fields),
+  execute: async (fields) => addDatabaseMemory(fields),
 });
 
 const listMemoriesTool = tool({
   name: "list_memories",
-  description: "Get all stored memories.",
+  description: "Get all stored memories from the database.",
   parameters: z.object({}),
-  execute: async () => getMemories(),
+  execute: async () => getDatabaseMemories(),
 });
 
 const updateMemoryTool = tool({
@@ -92,13 +97,16 @@ function checkReminders(rl) {
 
 // ---------- Chat loop ----------
 
-function showMemories() {
-  const rows = getMemories().map((m) => ({
+async function showMemories() {
+  const memories = await getDatabaseMemories();
+
+  const rows = memories.map((m) => ({
+    id: m.id,
     type: m.type,
     description: m.description,
     when: m.datetime,
-    remind_at: m.remind_at,
   }));
+
   console.table(rows);
 }
 
@@ -122,7 +130,7 @@ async function main() {
 
   if (input === "/memories") {
     console.log();
-    showMemories();
+    await showMemories();
   } else if (input) {
     try {
       const result = await run(agent, [
