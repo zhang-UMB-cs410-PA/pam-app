@@ -3,9 +3,9 @@ import { z } from "zod";
 import { getMemories, addMemory, updateMemory, deleteMemory, InvalidInput } from "./memory.js";
 
 const MODEL = process.env.PAM_MODEL ?? "gpt-5.6";
-const REQUIRED_ENV = ["OPENAI_API_KEY", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "PAM_TEST_USER_ID"];
+const REQUIRED_ENV = ["OPENAI_API_KEY"];
 
-export const USER_ID = process.env.PAM_TEST_USER_ID;
+export const USER_ID = "local";
 
 export function requireEnv() {
   const missing = REQUIRED_ENV.filter((name) => !process.env[name]);

@@ -5,7 +5,7 @@ import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
 import { chat, requireEnv, USER_ID } from "./pam.js";
 import { transcribe, speak } from "./speech.js";
-import { takeDueReminders } from "./memory.js";
+import { takeDueReminders, ackReminder } from "./memory.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const APP_ORIGIN = process.env.PAM_APP_ORIGIN ?? "http://localhost:8081";
@@ -47,7 +47,13 @@ app.post("/voice", bodyLimit({ maxSize: MAX_AUDIO_BYTES }), async (c) => {
   return c.json({ transcript, ...(await reply(await chat(USER_ID, transcript), wantsAudio)) });
 });
 
-app.get("/reminders/due", async (c) => c.json({ reminders: await takeDueReminders() }));
+app.post("/reminders/due", async (c) => c.json({ reminders: await takeDueReminders() }));
+
+app.post("/reminders/:id/ack", async (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || !(await ackReminder(id))) return c.json({ error: "No reminder with that id." }, 404);
+  return c.body(null, 204);
+});
 
 app.onError((error, c) => {
   console.error(`[${c.req.method} ${c.req.path}] ${error.message}`);
