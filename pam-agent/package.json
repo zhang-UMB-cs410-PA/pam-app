@@ -1,0 +1,17 @@
+{
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node --env-file=.env server.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.6",
+    "@openai/agents": "^0.21.0",
+    "@supabase/supabase-js": "^2.109.0",
+    "hono": "^4.13.17",
+    "openai": "^7.55.0",
+    "zod": "^4.6.7"
+  }
+}
