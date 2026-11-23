@@ -44,7 +44,7 @@ jobs:
         working-directory: backend
     services:
       postgres:
-        image: public.ecr.aws/supabase/postgres:17.12.0.000
+        image: supabase/postgres:17.12.0.000
         env:
           POSTGRES_PASSWORD: postgres
         ports:
