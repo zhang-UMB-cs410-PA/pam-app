@@ -1,10 +1,11 @@
 import { Image } from 'expo-image';
 import { Stack } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  ScrollViewInstance,
   StyleSheet,
   Text,
   TextInput,
@@ -12,17 +13,61 @@ import {
   View
 } from 'react-native';
 
+import { ackReminder, Reminder, sendMessage, takeDueReminders } from '@/services/pam';
+
+const REMINDER_POLL_MS = 30_000;
+
+type Message = { from: 'you' | 'pam'; text: string };
+
 export default function Index() {
   const [text, setText] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [showBanner, setShowBanner] = useState(true);
   const [firstName, setFirstName] = useState('user');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [sending, setSending] = useState(false);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const messageList = useRef<ScrollViewInstance>(null);
 
-  const handleSubmit = () => {
-    if (text.trim() === '') return;
-    Alert.alert('Saved to Memory', `You submitted: "${text}"`);
-    setText(''); 
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const due = await takeDueReminders();
+        setReminders((current) => [
+          ...current,
+          ...due.filter((r) => !current.some((c) => c.id === r.id)),
+        ]);
+      } catch {}
+    };
+    check();
+    const timer = setInterval(check, REMINDER_POLL_MS);
+    return () => clearInterval(timer);
+  }, []);
+
+  const dismissReminder = (id: number) => {
+    setReminders((current) => current.filter((r) => r.id !== id));
+    ackReminder(id).catch(() => {});
   };
+
+  const handleSubmit = async () => {
+    const message = text.trim();
+    if (message === '' || sending) return;
+    setText('');
+    setSending(true);
+    setMessages((current) => [...current, { from: 'you', text: message }]);
+    try {
+      const reply = await sendMessage(message);
+      setMessages((current) => [...current, { from: 'pam', text: reply }]);
+    } catch {
+      setMessages((current) => [
+        ...current,
+        { from: 'pam', text: "Sorry, I can't reach PAM right now. Please try again." },
+      ]);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const reminder = reminders[0];
 
   const currentBgColor = isDarkMode ? '#060B26' : '#F0F3FA'; 
   const currentTextColor = isDarkMode ? '#ffffff' : '#0B132B';
@@ -48,13 +93,13 @@ export default function Index() {
       />
 
       {/* Transparent Magenta/Purple App Banner Pulled Directly From Logo */}
-      {showBanner && (
+      {reminder && (
         <TouchableOpacity 
           style={[
             styles.reminderBanner, 
             { backgroundColor: isDarkMode ? 'rgba(161, 77, 255, 0.15)' : '#F2E6FF' }
           ]} 
-          onPress={() => setShowBanner(false)}
+          onPress={() => dismissReminder(reminder.id)}
           activeOpacity={0.9}
         >
           <View style={styles.bannerContent}>
@@ -62,7 +107,7 @@ export default function Index() {
             <View style={styles.bannerTextContainer}>
               <Text style={[styles.bannerTitle, { color: isDarkMode ? '#C599FF' : '#A14DFF' }]}>UPCOMING REMINDER</Text>
               <Text style={[styles.bannerDescription, { color: currentTextColor }]}>
-                Call your daughter Amy at 5:00 PM.
+                {reminder.message}
               </Text>
             </View>
             <Text style={[styles.dismissText, { color: isDarkMode ? '#C599FF' : '#A14DFF' }]}>✕</Text>
@@ -112,16 +157,44 @@ export default function Index() {
               placeholderTextColor={isDarkMode ? '#5F6C95' : '#999'}
               value={text}
               onChangeText={setText}
+              onSubmitEditing={handleSubmit}
+              editable={!sending}
             />
             
             <TouchableOpacity 
-              style={[styles.button, { backgroundColor: currentButtonBg }]} 
+              style={[styles.button, { backgroundColor: currentButtonBg, opacity: sending ? 0.6 : 1 }]} 
               onPress={handleSubmit}
+              disabled={sending}
             >
-              <Text style={styles.buttonText}>Submit</Text>
+              <Text style={styles.buttonText}>{sending ? '...' : 'Submit'}</Text>
             </TouchableOpacity>
           </View>
         </View>
+
+        {messages.length > 0 && (
+          <ScrollView
+            ref={messageList}
+            style={styles.messageList}
+            contentContainerStyle={styles.messageListContent}
+            onContentSizeChange={() => messageList.current?.scrollToEnd({ animated: true })}
+          >
+            {messages.map((m, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.message,
+                  m.from === 'you'
+                    ? [styles.messageYou, { backgroundColor: currentButtonBg }]
+                    : [styles.messagePam, { backgroundColor: currentCardBg }],
+                ]}
+              >
+                <Text style={[styles.messageText, { color: m.from === 'you' ? '#ffffff' : currentTextColor }]}>
+                  {m.text}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+        )}
 
       </View>
     </KeyboardAvoidingView>
@@ -253,5 +326,29 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: 'bold',
     color: '#ffffff',
+  },
+  messageList: {
+    width: '100%',
+    maxHeight: 280,
+    marginTop: 16,
+  },
+  messageListContent: {
+    gap: 8,
+  },
+  message: {
+    maxWidth: '85%',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+  },
+  messageYou: {
+    alignSelf: 'flex-end',
+  },
+  messagePam: {
+    alignSelf: 'flex-start',
+  },
+  messageText: {
+    fontSize: 16,
+    lineHeight: 22,
   },
 });
