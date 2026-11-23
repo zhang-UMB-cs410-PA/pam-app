@@ -18,7 +18,7 @@ set memory_type = 'fact'
 where memory_type = 'general';
 
 alter table public.memories
-alter column memory_type drop default;
+alter column memory_type set default 'fact';
 
 alter table public.memories
 drop constraint if exists memories_memory_type_check;
