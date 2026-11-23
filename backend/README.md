@@ -24,7 +24,7 @@ Endpoints are listed at http://127.0.0.1:8000/docs.
 ## Test
 
 ```
-docker run -d --name pam-test-db -e POSTGRES_PASSWORD=postgres -p 127.0.0.1:54329:5432 public.ecr.aws/supabase/postgres:17.12.0.000
+docker run -d --name pam-test-db -e POSTGRES_PASSWORD=postgres -p 127.0.0.1:54329:5432 supabase/postgres:17.12.0.000
 .venv/bin/pip install -r requirements-dev.txt
 TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54329/postgres .venv/bin/pytest
 ```
